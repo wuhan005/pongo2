@@ -88,7 +88,7 @@ func tagIncludeParser(doc *Parser, start *Token, arguments *Parser) (INodeTag, *
 
 		// Parse the parent
 		includeNode.filename = includedFilename
-		includedTpl, err := doc.template.set.FromFile(includedFilename)
+		includedTpl, err := doc.template.set.FromCache(includedFilename)
 		if err != nil {
 			// if this is ReadFile error, and "if_exists" token presents we should create and empty node
 			if err.(*Error).Sender == "fromfile" && ifExists {

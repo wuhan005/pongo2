@@ -53,7 +53,7 @@ type TemplateSet struct {
 
 	// Template cache (for FromCache())
 	templateCache      map[string]*Template
-	templateCacheMutex sync.Mutex
+	templateCacheMutex sync.RWMutex
 }
 
 // NewSet can be used to create sets with different kind of templates
@@ -173,18 +173,24 @@ func (set *TemplateSet) FromCache(filename string) (*Template, error) {
 	// Cache the template
 	cleanedFilename := set.resolveFilename(nil, filename)
 
-	set.templateCacheMutex.Lock()
-	defer set.templateCacheMutex.Unlock()
-
+	set.templateCacheMutex.RLock()
 	tpl, has := set.templateCache[cleanedFilename]
+	set.templateCacheMutex.RUnlock()
 
 	// Cache miss
 	if !has {
+		set.templateCacheMutex.Lock()
+		set.templateCache[cleanedFilename] = &Template{}
+		set.templateCacheMutex.Unlock()
+
 		tpl, err := set.FromFile(cleanedFilename)
 		if err != nil {
 			return nil, err
 		}
-		set.templateCache[cleanedFilename] = tpl
+
+		set.templateCacheMutex.Lock()
+		*set.templateCache[cleanedFilename] = *tpl
+		set.templateCacheMutex.Unlock()
 		return tpl, nil
 	}
 
